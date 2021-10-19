@@ -1,4 +1,9 @@
-opencv-python==4.5.3.56
+
 black
 isort
-mediapipe
+click==7.1.2
+PyYAML==5.3.1
+
+mediapipe==0.8.8.1
+opencv-python==4.5.3.56
+onnxruntime==1.9.0
