@@ -7,3 +7,5 @@ PyYAML==5.3.1
 mediapipe==0.8.8.1
 opencv-python==4.5.3.56
 onnxruntime==1.9.0
+torch==1.7.0
+torchvision==0.8.1

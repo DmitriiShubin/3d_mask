@@ -1,11 +1,12 @@
 import numpy as np
 
-def calculate_angle_x(left_eye:tuple,right_eye:tuple):
+
+def calculate_angle_x(left_eye: tuple, right_eye: tuple):
 
     x = np.array(left_eye)
     y = np.array(right_eye)
 
-    proj = x[1]-y[1]
+    proj = x[1] - y[1]
 
     if proj > 0:
         pos = True
@@ -16,9 +17,9 @@ def calculate_angle_x(left_eye:tuple,right_eye:tuple):
 
     proj = np.abs(proj)
 
-    ct = 1/np.tan(proj/(x[0]-y[0]))
+    ct = 1 / np.tan(proj / (x[0] - y[0]))
 
     if pos:
-        return 90-np.degrees(np.arctan(ct))
+        return 90 - np.degrees(np.arctan(ct))
     else:
-        return np.degrees(np.arctan(ct))-90
+        return np.degrees(np.arctan(ct)) - 90
