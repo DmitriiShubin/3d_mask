@@ -2,6 +2,7 @@ import open3d as o3d
 import numpy as np
 import copy
 import cv2
+from utils import calculate_angle
 
 
 class Mask:
@@ -63,20 +64,19 @@ class Mask:
     def run(self, frame, left_eye_position, right_eye_position):
 
         # TODO: rotation of the mesh
+        mesh_r = self._rotate_mesh(left_eye=left_eye_position, right_eye=right_eye_position)
 
         # add object
-        self.render.scene.add_geometry("rotated_model", self.mesh, self.mtl)
+        self.render.scene.add_geometry("rotated_model", mesh_r, self.mtl)
 
         # render the image
         image = self.render.render_to_image()
         image = cv2.cvtColor(np.array(image), cv2.COLOR_RGBA2RGB)
 
-        # TODO: scaling of the mesh
         image, render_reference_points = self._scale_mesh(
             image=image, left_eye=left_eye_position, right_eye=right_eye_position
         )
 
-        # TODO: location of the mesh
         image = self._locate_mesh(
             image=image,
             frame_reference_points=(left_eye_position, right_eye_position),
@@ -189,3 +189,38 @@ class Mask:
             image[shift[1] :, :, :] = np.ones_like(image[shift[1] :, :, :]) * 255
 
         return image
+
+    def _rotate_mesh(self, left_eye, right_eye):
+
+        theta_z = (self.calculate_angle_x(left_eye=left_eye, right_eye=right_eye) / 180) * np.pi
+
+        # TODO: finish rotation for X and Y
+
+        R = self.mesh.get_rotation_matrix_from_xyz((0, 0, -theta_z))
+        mesh_r = copy.deepcopy(self.mesh)
+        mesh_r.rotate(R, center=(0, 0, 0))
+
+        return mesh_r
+
+    def calculate_angle_x(self, left_eye: tuple, right_eye: tuple):
+
+        x = np.array(right_eye)
+        y = np.array(left_eye)
+
+        proj = x[1] - y[1]
+
+        if proj > 0:
+            pos = True
+        elif proj < 0:
+            pos = False
+        else:
+            return 0
+
+        proj = np.abs(proj)
+
+        ct = 1 / np.tan(proj / (x[0] - y[0]))
+
+        if pos:
+            return 90 - np.degrees(np.arctan(ct))
+        else:
+            return np.degrees(np.arctan(ct)) - 90
