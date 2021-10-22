@@ -1,0 +1,59 @@
+batch_size: 32
+n_epochs: 300
+patience: 30 #number of epochs wait until improvement
+clipping: true #apply gradient clipping
+min_delta: 0.01 #min delta of improvement for early stopping
+start_fold: [0] #fold will be ran
+verbose_train: true
+num_workers: 2
+model_name: wavenet # CHANGE WHEN CREATE A NEW MODEL
+checkpoint_path: ./data/model_weights/wavenet/checkpoint # CHANGE WHEN CREATE A NEW MODEL
+model_path: ./data/model_weights/wavenet # CHANGE WHEN CREATE A NEW MODEL
+model:
+  n_channels: 1
+  n_samples: 15000
+  wavenet_dilation: [ 2,4,8,16,32 ]
+  layer_feature_maps: [ 8,16 ] #feature maps for STEM layer, last layer defines number of wavenet filters
+  dropout_rate: 0.2
+  alpha: 0.3
+  pool_size: 2
+  kernel_size: 3
+  dilation: 1
+  n_classes: 2
+  freeze_layers: False
+  pre_trained_model: './data/pre_trained_models/wavenet_0_fold_0.10003346_0.11100239_1612565782.9220312'
+  aug_hparams:
+    make_zeros:
+      prob: 0.1
+    gaussian_noise:
+      prob: 0.1
+      std:  0.25
+    reverse_amplitude:
+      prob: 0.0
+    resampling:
+      prob: 0.0
+      stretching_coef: 0.1
+    random_spike:
+      prob: 0.0
+    baseline_wandering_noise:
+      prob: 0.0
+      amp_max: 2.75
+      feq_max: 1.0
+    amplitude_adjusting:
+      prob: 0.0
+      std: 0.1
+optimizer_name: Adam
+optimizer_hparams:
+  lr: 0.0001
+  weight_decay: 0.001
+#scheduler_name: CosineAnnealingLR
+#scheduler_hparams:
+#  T_max: 15
+#  eta_min: 1.0e-09
+#  last_epoch: -1
+#  verbose: true
+scheduler_name: ReduceLROnPlateau
+scheduler_hparams:
+  patience: 10
+  threshold: 0.02
+  verbose: true
