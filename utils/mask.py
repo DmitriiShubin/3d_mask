@@ -72,10 +72,16 @@ class Mask:
         image = cv2.cvtColor(np.array(image), cv2.COLOR_RGBA2RGB)
 
         # TODO: scaling of the mesh
-        image = self._scale_mesh(image=image, left_eye=left_eye_position, right_eye=right_eye_position)
+        image, render_reference_points = self._scale_mesh(
+            image=image, left_eye=left_eye_position, right_eye=right_eye_position
+        )
 
         # TODO: location of the mesh
-
+        image = self._locate_mesh(
+            image=image,
+            frame_reference_points=(left_eye_position, right_eye_position),
+            render_reference_points=render_reference_points,
+        )
         # remove all objects from render
         self.render.scene.clear_geometry()
 
@@ -128,11 +134,15 @@ class Mask:
         scale_factor = frame_distance / render_distance
         scale_factor *= 1.2
 
+        render_reference_points = [
+            list(int(point * scale_factor) for point in point_pair) for point_pair in render_reference_points
+        ]
+
         image_size = image.shape
 
         image = cv2.resize(image, (int(image.shape[1] * scale_factor), int(image.shape[0] * scale_factor)))
 
-        if image.shape[0] <= image_size[0]:
+        if image.shape[0] <= image_size[0] and image.shape[1] <= image_size[1]:
 
             filled_image = np.ones(image_size) * 255
             filled_image[: image.shape[0], : image.shape[1], :] = image
@@ -142,7 +152,40 @@ class Mask:
 
             filled_image = image[diff_x // 2 : -1 * diff_x // 2, diff_y // 2 : -1 * diff_y // 2, :]
 
-        return filled_image
+        return filled_image, render_reference_points
 
     def _compute_distance_between_points(self, x, y):
         return np.sqrt((x[0] - y[0]) ** 2 + (x[1] - y[1]))
+
+    def _locate_mesh(self, image, frame_reference_points, render_reference_points):
+
+        # compute center between reference_points
+        frame_center = (
+            (frame_reference_points[0][0] + frame_reference_points[1][0]) // 2,
+            (frame_reference_points[0][1] + frame_reference_points[1][1]) // 2,
+        )
+        render_center = (
+            (render_reference_points[0][0] + render_reference_points[1][0]) // 2,
+            (render_reference_points[0][1] + render_reference_points[1][1]) // 2,
+        )
+
+        shift = (
+            frame_center[0] - render_center[0],
+            frame_center[1] - render_center[1],
+        )
+
+        if shift[0] > 0:
+            image[:, shift[0] :, :] = image[:, : -shift[0], :]
+            image[:, : shift[0], :] = np.ones_like(image[:, : shift[0], :]) * 255
+        elif shift[0] < 0:
+            image[:, : shift[0], :] = image[:, -shift[0] :, :]
+            image[:, shift[0] :, :] = np.ones_like(image[:, shift[0] :, :]) * 255
+
+        if shift[1] > 0:
+            image[shift[1] :, :, :] = image[: -shift[1], :, :]
+            image[: shift[1], :, :] = np.ones_like(image[: shift[1], :, :]) * 255
+        elif shift[1] < 0:
+            image[: shift[1], :, :] = image[-shift[1] :, :, :]
+            image[shift[1] :, :, :] = np.ones_like(image[shift[1] :, :, :]) * 255
+
+        return image
