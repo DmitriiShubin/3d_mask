@@ -64,7 +64,7 @@ class Mask:
     def run(self, frame, left_eye_position, right_eye_position):
 
         # TODO: rotation of the mesh
-        mesh_r = self._rotate_mesh(left_eye=left_eye_position, right_eye=right_eye_position)
+        mesh_r, eye_points_r = self._rotate_mesh(left_eye=left_eye_position, right_eye=right_eye_position)
 
         # add object
         self.render.scene.add_geometry("rotated_model", mesh_r, self.mtl)
@@ -73,10 +73,15 @@ class Mask:
         image = self.render.render_to_image()
         image = cv2.cvtColor(np.array(image), cv2.COLOR_RGBA2RGB)
 
+        # apply scaling
         image, render_reference_points = self._scale_mesh(
-            image=image, left_eye=left_eye_position, right_eye=right_eye_position
+            image=image,
+            left_eye=left_eye_position,
+            right_eye=right_eye_position,
+            render_eye_points=eye_points_r,
         )
 
+        # locate mesh
         image = self._locate_mesh(
             image=image,
             frame_reference_points=(left_eye_position, right_eye_position),
@@ -94,13 +99,13 @@ class Mask:
 
     ####### Utils #########
 
-    def _calculate_reference_point_projections(self):
+    def _calculate_reference_point_projections(self, eye_points):
         P = self.render.scene.camera.get_projection_matrix()
         V = self.render.scene.camera.get_view_matrix()
 
         projections = []
 
-        points = np.array(self.eye_points.points)
+        points = np.array(eye_points.points)
         for i in range(points.shape[0]):
             point = points[i]
             point = np.concatenate([point, np.ones(1)], axis=0)
@@ -123,10 +128,10 @@ class Mask:
 
         return mask
 
-    def _scale_mesh(self, image, left_eye, right_eye):
+    def _scale_mesh(self, image, left_eye, right_eye, render_eye_points):
 
         frame_distance = self._compute_distance_between_points(x=left_eye, y=right_eye)
-        render_reference_points = self._calculate_reference_point_projections()
+        render_reference_points = self._calculate_reference_point_projections(render_eye_points)
         render_distance = self._compute_distance_between_points(
             x=render_reference_points[0], y=render_reference_points[1]
         )
@@ -200,7 +205,10 @@ class Mask:
         mesh_r = copy.deepcopy(self.mesh)
         mesh_r.rotate(R, center=(0, 0, 0))
 
-        return mesh_r
+        eye_points_r = copy.deepcopy(self.eye_points)
+        eye_points_r.rotate(R, center=(0, 0, 0))
+
+        return mesh_r, eye_points_r
 
     def calculate_angle_x(self, left_eye: tuple, right_eye: tuple):
 
