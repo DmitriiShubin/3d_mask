@@ -60,13 +60,9 @@ class Mask:
         up = [0, 1, 0]  # camera orientation
         self.render.scene.camera.look_at(center, eye, up)
 
-    def run(self, frame):
+    def run(self, frame, left_eye_position, right_eye_position):
 
-        # rotation of the mesh
-
-        # scaling of the mesh
-
-        # location of the mesh
+        # TODO: rotation of the mesh
 
         # add object
         self.render.scene.add_geometry("rotated_model", self.mesh, self.mtl)
@@ -75,13 +71,18 @@ class Mask:
         image = self.render.render_to_image()
         image = cv2.cvtColor(np.array(image), cv2.COLOR_RGBA2RGB)
 
+        # TODO: scaling of the mesh
+        image = self._scale_mesh(image=image, left_eye=left_eye_position, right_eye=right_eye_position)
+
+        # TODO: location of the mesh
+
         # remove all objects from render
         self.render.scene.clear_geometry()
 
         # masking the rendered image
         mask = self._get_binary_mask(image=image)
-        frame[mask == 1] = image[mask == 1]
         # alignment of images
+        frame[mask == 1] = image[mask == 1]
 
         return frame
 
@@ -115,3 +116,33 @@ class Mask:
         mask[image[:, :, 0] < 150] = 1  # thresholding
 
         return mask
+
+    def _scale_mesh(self, image, left_eye, right_eye):
+
+        frame_distance = self._compute_distance_between_points(x=left_eye, y=right_eye)
+        render_reference_points = self._calculate_reference_point_projections()
+        render_distance = self._compute_distance_between_points(
+            x=render_reference_points[0], y=render_reference_points[1]
+        )
+
+        scale_factor = frame_distance / render_distance
+        scale_factor *= 1.2
+
+        image_size = image.shape
+
+        image = cv2.resize(image, (int(image.shape[1] * scale_factor), int(image.shape[0] * scale_factor)))
+
+        if image.shape[0] <= image_size[0]:
+
+            filled_image = np.ones(image_size) * 255
+            filled_image[: image.shape[0], : image.shape[1], :] = image
+        else:
+            diff_x = image.shape[0] - image_size[0]
+            diff_y = image.shape[1] - image_size[1]
+
+            filled_image = image[diff_x // 2 : -1 * diff_x // 2, diff_y // 2 : -1 * diff_y // 2, :]
+
+        return filled_image
+
+    def _compute_distance_between_points(self, x, y):
+        return np.sqrt((x[0] - y[0]) ** 2 + (x[1] - y[1]))
