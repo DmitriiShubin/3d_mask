@@ -200,7 +200,7 @@ class Mask:
         return np.sqrt((x[0] - y[0]) ** 2 + (x[1] - y[1]) ** 2)
 
     def _locate_mesh(
-        self, image: np.array, frame_reference_points: Tuple, render_reference_points: Tuple
+        self, image: np.array, frame_reference_points: Tuple, render_reference_points: List
     ) -> np.array:
 
         # compute center between reference_points
