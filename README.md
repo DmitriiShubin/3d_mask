@@ -107,26 +107,11 @@ features['upper_sides_proportion'] = a / b
 ```
 
 ##### X rotation
+The X-axis is the most difficult to compute. Again, I used the same Biwi dataset, using a ratio of the distances forehead-mid eye and left eye-right eye as a feature for calculating the angle.
 ![alt text](https://github.com/DmitriiShubin/3d_mask/blob/main/src/x_rotation.jpg)
 
-### Some intermediate results
-
-
-
-
-### What didn't work
-Trying to improve FPS, I tried to run a face detector prior to the landmark detecor. It
-1. detection of the face => adding keypoints 
-20-> 30 FPS
-probably could be beneficial when training and compression of the separate landmark detection model
-
-2. 
-
-
-
-TODO:
-3. add description 
-4. Check up how it runs on mac
-
-record a demo
-add docker i
+```
+c = self._compute_distance_between_points(right_eye, left_eye)
+d = self._compute_distance_between_points(forehead, center)
+features['vertical_sides_proportion'] = d / c
+```
