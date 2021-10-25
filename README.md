@@ -1,7 +1,7 @@
 ## Real-time 3D AR face mask alignment using facial landmarks
 
 ### Demo
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/YOUTUBE_VIDEO_ID_HERE/0.jpg)](https://youtu.be/Fda6uE5K8r0)
+[![IMAGE ALT TEXT HERE](https://github.com/DmitriiShubin/3d_mask/blob/main/src/preview.jpg)](https://youtu.be/Fda6uE5K8r0)
 
 ### How launch
 
@@ -19,7 +19,7 @@ calculation of the position -> alignment of the facemask
 
 
 #### Theory
-
+![alt text](http://url/to/img.png)
 #### 1. What does it need to do to align an AR mask on the face?
 
 #### 2. Facial keypoints selection
