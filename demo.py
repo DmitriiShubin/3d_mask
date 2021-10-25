@@ -4,12 +4,10 @@ import click
 import cv2
 import yaml
 
-from face_detector import FaceDetector
-from landmark_detector import LandmarkDetector
+from utils.landmark_detector import LandmarkDetector
 from utils import Mask
 
 # utils
-from utils import expand_face_box
 
 
 @click.command()
@@ -23,7 +21,6 @@ def main(config_path):
 
     # intialize classes
     landmark_detector = LandmarkDetector(config=config)
-    face_detector = FaceDetector(model_path=config['face_detector_path'])
 
     _, frame = cap.read()
     mask = Mask(config=config['mesh_params'], frame_size=frame.shape[:2][::-1])
