@@ -1,5 +1,5 @@
 num_faces: 1
-show_landmarks: True
+show_landmarks: False
 show_mask: True
 mesh_params:
   mesh_color: [0.2, 0.2, 0.2]

@@ -4,10 +4,11 @@ import click
 import cv2
 import yaml
 
+
 from utils.landmark_detector import LandmarkDetector
 from utils import Mask
 
-# utils
+
 
 
 @click.command()
