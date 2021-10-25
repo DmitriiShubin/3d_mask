@@ -1,6 +1,6 @@
 num_faces: 1
-face_detector_path: "./face_detector/model_weights/version-RFB-640.onnx"
-face_area_coeficient: 2
+show_landmarks: True
+show_mask: True
 mesh_params:
   mesh_color: [0.2, 0.2, 0.2]
   render_color: [0.2, 0.2, 0.2, 1] #RGBA

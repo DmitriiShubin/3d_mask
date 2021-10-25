@@ -79,7 +79,7 @@ class Mask:
         up = [0, 1, 0]  # camera orientation
         self.render.scene.camera.look_at(center, eye, up)
 
-    def run(self, frame, left_eye_position, right_eye_position,forehead_position,nose_position,center_position):
+    def run(self, frame, left_eye_position, right_eye_position,forehead_position,nose_position,center_position,show_mask:bool):
 
         mesh_r, eye_points_r = self._rotate_mesh(left_eye=left_eye_position, right_eye=right_eye_position,forehead=forehead_position,
                                                  nose=nose_position,center=center_position)
@@ -110,8 +110,9 @@ class Mask:
 
         # masking the rendered image
         mask = self._get_binary_mask(image=image)
-        # alignment of images
-        frame[mask == 1] = image[mask == 1]
+        if show_mask:
+            # alignment of images
+            frame[mask == 1] = image[mask == 1]
 
         return frame
 
