@@ -1,5 +1,5 @@
 ## Real-time 3D AR face mask alignment using facial landmarks
-
+The following repo describes the pepeline of real-time AR 3D facemask alignment (mask of Frontman from Squid Games TV series)
 ### Demo
 [![IMAGE ALT TEXT HERE](https://github.com/DmitriiShubin/3d_mask/blob/main/src/preview.png)](https://youtu.be/Fda6uE5K8r0)
 
