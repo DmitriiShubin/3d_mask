@@ -1,7 +1,7 @@
 ## Real-time 3D AR face mask alignment using facial landmarks
 
 ### Demo
-[![IMAGE ALT TEXT HERE](https://github.com/DmitriiShubin/3d_mask/blob/main/src/Screenshot%20from%202021-10-25%2016-14-52.png)](https://youtu.be/Fda6uE5K8r0)
+[![IMAGE ALT TEXT HERE](https://github.com/DmitriiShubin/3d_mask/blob/main/src/preview.png)](https://youtu.be/Fda6uE5K8r0)
 
 ### How launch
 
