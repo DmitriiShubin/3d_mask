@@ -4,7 +4,6 @@ isort
 click==7.1.2
 PyYAML==5.4.1
 jupyterlab
-efficientnet-pytorch==0.7.1
 tqdm==4.54.1
 scikit-learn==1.0
 
@@ -14,4 +13,5 @@ onnxruntime==1.9.0
 torch==1.7.0
 torchvision==0.8.1
 open3d==0.13.0
-# pytorch3d==0.3.0
+
+seaborn==0.11.2

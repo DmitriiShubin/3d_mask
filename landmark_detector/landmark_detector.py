@@ -26,12 +26,18 @@ class LandmarkDetector:
                 int(predictions.multi_face_landmarks[0].landmark[263].y * image_y_shape),
             )
             landmarks['nose'] = (
-                int(predictions.multi_face_landmarks[0].landmark[0].x * image_x_shape),
-                int(predictions.multi_face_landmarks[0].landmark[0].y * image_y_shape),
+                int(predictions.multi_face_landmarks[0].landmark[1].x * image_x_shape),
+                int(predictions.multi_face_landmarks[0].landmark[1].y * image_y_shape),
             )
             landmarks['forehead'] = (
                 int(predictions.multi_face_landmarks[0].landmark[151].x * image_x_shape),
                 int(predictions.multi_face_landmarks[0].landmark[151].y * image_y_shape),
+            )
+
+            landmarks['center'] = (
+                                (landmarks['forehead'][0] + landmarks['nose'][0]) // 2,
+                                (landmarks['left_eye'][1] + landmarks['right_eye'][1]) // 2,
+
             )
 
             return landmarks

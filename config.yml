@@ -4,3 +4,6 @@ face_area_coeficient: 2
 mesh_params:
   mesh_color: [0.2, 0.2, 0.2]
   render_color: [0.2, 0.2, 0.2, 1] #RGBA
+  ma_scale_length: 5
+  ma_position_length: 2
+  ma_rotation_length: 3

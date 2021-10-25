@@ -5,3 +5,10 @@ What didn't work:
 probably could be beneficial when training and compression of the separate landmark detection model
 
 2. 
+
+
+
+TODO:
+1. move head pose to the main repo
+2. add typing
+3. add 
