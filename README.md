@@ -9,9 +9,9 @@ probably could be beneficial when training and compression of the separate landm
 
 
 TODO:
-1. move head pose to the main repo
-2. add typing
 3. add description 
 4. Check up how it runs on mac
-5. upload the data on google drive
-6. clean up, remove extra objects
+
+
+Link to google drive
+https://drive.google.com/file/d/1alSPw5XmCkwBpq0aady02oJuXTRapAIi/view?usp=sharing

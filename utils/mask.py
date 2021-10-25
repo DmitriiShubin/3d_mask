@@ -2,13 +2,15 @@ import open3d as o3d
 import numpy as np
 import copy
 import cv2
+from typing import Tuple, List
 from .moving_average import MovingAverage
 import pickle
 
-class Mask:
-    def __init__(self, config, frame_size):
 
-        #load models for approximation of the head position
+class Mask:
+    def __init__(self, config: dict, frame_size: Tuple[int, int]):
+
+        # load models for approximation of the head position
         self.theta_y_model = pickle.load(open('./data/face_pose_models/linear_model_theta_y.pkl', 'rb'))
         self.theta_x_model = pickle.load(open('./data/face_pose_models/linear_model_theta_x.pkl', 'rb'))
 
@@ -27,12 +29,7 @@ class Mask:
         # set up reference eye points
         self.eye_points = o3d.geometry.PointCloud()
         self.eye_points.points = o3d.utility.Vector3dVector(
-            np.array([
-
-                [-0.01, 0.125, 0.5],
-                [-0.01, 0.125, -0.5]
-
-            ])
+            np.array([[-0.01, 0.125, 0.5], [-0.01, 0.125, -0.5]])
         )
 
         # define moving averages for various components
@@ -43,9 +40,8 @@ class Mask:
         self.moving_average_theta_y = MovingAverage(length=config['ma_rotation_length'])
         self.moving_average_theta_z = MovingAverage(length=config['ma_rotation_length'])
 
-
         # rotate points to have a front loor
-        R = self.mesh.get_rotation_matrix_from_xyz((0,np.pi/2,0))
+        R = self.mesh.get_rotation_matrix_from_xyz((0, np.pi / 2, 0))
         self.mesh.rotate(R, center=(0, 0, 0))
         self.eye_points.rotate(R, center=(0, 0, 0))
 
@@ -79,10 +75,24 @@ class Mask:
         up = [0, 1, 0]  # camera orientation
         self.render.scene.camera.look_at(center, eye, up)
 
-    def run(self, frame, left_eye_position, right_eye_position,forehead_position,nose_position,center_position,show_mask:bool):
+    def run(
+        self,
+        frame: np.array,
+        left_eye_position: Tuple[int, int],
+        right_eye_position: Tuple[int, int],
+        forehead_position: Tuple[int, int],
+        nose_position: Tuple[int, int],
+        center_position: Tuple[int, int],
+        show_mask: bool,
+    ) -> np.array:
 
-        mesh_r, eye_points_r = self._rotate_mesh(left_eye=left_eye_position, right_eye=right_eye_position,forehead=forehead_position,
-                                                 nose=nose_position,center=center_position)
+        mesh_r, eye_points_r = self._rotate_mesh(
+            left_eye=left_eye_position,
+            right_eye=right_eye_position,
+            forehead=forehead_position,
+            nose=nose_position,
+            center=center_position,
+        )
 
         # add object
         self.render.scene.add_geometry("rotated_model", mesh_r, self.mtl)
@@ -118,7 +128,7 @@ class Mask:
 
     ####### Utils #########
 
-    def _calculate_reference_point_projections(self, eye_points):
+    def _calculate_reference_point_projections(self, eye_points: o3d.geometry.PointCloud) -> List:
         P = self.render.scene.camera.get_projection_matrix()
         V = self.render.scene.camera.get_view_matrix()
 
@@ -141,13 +151,18 @@ class Mask:
 
         return projections
 
-    def _get_binary_mask(self, image):
+    def _get_binary_mask(self, image: np.array) -> np.array:
         mask = np.zeros(image.shape)
         mask[image[:, :, 0] < 150] = 1  # thresholding
-
         return mask
 
-    def _scale_mesh(self, image, left_eye, right_eye, render_eye_points):
+    def _scale_mesh(
+        self,
+        image: np.array,
+        left_eye: Tuple[int, int],
+        right_eye: Tuple[int, int],
+        render_eye_points: o3d.geometry.PointCloud,
+    ) -> [np.array, List]:
 
         frame_distance = self._compute_distance_between_points(x=left_eye, y=right_eye)
         render_reference_points = self._calculate_reference_point_projections(render_eye_points)
@@ -158,7 +173,7 @@ class Mask:
         scale_factor = frame_distance / render_distance
         scale_factor *= 1.4
 
-        #apply moving average
+        # apply moving average
         scale_factor = self.moving_average_scale.run(value=scale_factor)
 
         render_reference_points = [
@@ -181,10 +196,12 @@ class Mask:
 
         return filled_image, render_reference_points
 
-    def _compute_distance_between_points(self, x, y):
-        return np.sqrt((x[0] - y[0]) ** 2 + (x[1] - y[1])**2)
+    def _compute_distance_between_points(self, x: np.array, y: np.array) -> float:
+        return np.sqrt((x[0] - y[0]) ** 2 + (x[1] - y[1]) ** 2)
 
-    def _locate_mesh(self, image, frame_reference_points, render_reference_points):
+    def _locate_mesh(
+        self, image: np.array, frame_reference_points: Tuple, render_reference_points: Tuple
+    ) -> np.array:
 
         # compute center between reference_points
         frame_center = (
@@ -220,24 +237,27 @@ class Mask:
 
         return image
 
-    def _rotate_mesh(self, left_eye, right_eye,forehead,nose,center):
+    def _rotate_mesh(
+        self,
+        left_eye: Tuple[int, int],
+        right_eye: Tuple[int, int],
+        forehead: Tuple[int, int],
+        nose: Tuple[int, int],
+        center: Tuple[int, int],
+    ) -> [o3d.geometry.TriangleMesh, o3d.geometry.PointCloud]:
 
-        face_features = self.exract_face_features(left_eye=left_eye,right_eye=right_eye,
-                                                  forehead=forehead,
-                                                  nose=nose,
-                                                  center=center)
+        face_features = self.exract_face_features(
+            left_eye=left_eye, right_eye=right_eye, forehead=forehead, nose=nose, center=center
+        )
 
+        theta_y = self.theta_y_model.predict(
+            np.array([face_features['upper_sides_proportion']]).reshape(-1, 1)
+        )[0]
+        theta_y = np.clip(theta_y, a_min=-30, a_max=30)
+        features_x = np.array([face_features['vertical_sides_proportion']])
+        theta_x = self.theta_x_model.predict(features_x.reshape(-1, features_x.shape[0]))[0]
 
-        theta_y = self.theta_y_model.predict(np.array([face_features['upper_sides_proportion']]).reshape(-1,1))[0]
-        theta_y = np.clip(theta_y,a_min=-30,a_max=30)
-        features_x = np.array([
-                               face_features['vertical_sides_proportion']
-
-                               ])
-        theta_x = self.theta_x_model.predict(features_x.reshape(-1,features_x.shape[0]))[0]
-
-        theta_x = np.clip(theta_x,a_min=-15,a_max=15)
-
+        theta_x = np.clip(theta_x, a_min=-15, a_max=15)
 
         theta_z = (-self.calculate_angle_x(left_eye=left_eye, right_eye=right_eye) / 180) * np.pi
         theta_y = (-theta_y / 180) * np.pi
@@ -256,7 +276,14 @@ class Mask:
 
         return mesh_r, eye_points_r
 
-    def exract_face_features(self,left_eye, right_eye,forehead,nose,center):
+    def exract_face_features(
+        self,
+        left_eye: Tuple[int, int],
+        right_eye: Tuple[int, int],
+        forehead: Tuple[int, int],
+        nose: Tuple[int, int],
+        center: Tuple[int, int],
+    ) -> dict:
 
         """
         features:
@@ -270,23 +297,11 @@ class Mask:
 
         features = {}
 
-        a = self._compute_distance_between_points(left_eye,
-                                             forehead
-                                             )
-        b = self._compute_distance_between_points(right_eye,
-                                             forehead
-                                             )
-        c = self._compute_distance_between_points(right_eye,
-                                             left_eye
-                                             )
+        a = self._compute_distance_between_points(left_eye, forehead)
+        b = self._compute_distance_between_points(right_eye, forehead)
+        c = self._compute_distance_between_points(right_eye, left_eye)
 
-        d = self._compute_distance_between_points(forehead,
-                                             center
-                                             )
-
-        e = self._compute_distance_between_points(center,
-                                             nose
-                                             )
+        d = self._compute_distance_between_points(forehead, center)
 
         features['upper_sides_proportion'] = a / b
         features['vertical_sides_proportion'] = d / c
@@ -294,10 +309,9 @@ class Mask:
         features['beta'] = np.degrees(np.arccos((a ** 2 + c ** 2 - b ** 2) / (2 * a * c)))
         features['gamma'] = np.degrees(np.arccos((a ** 2 + b ** 2 - c ** 2) / (2 * a * b)))
 
-     
         return features
 
-    def calculate_angle_x(self, left_eye: tuple, right_eye: tuple):
+    def calculate_angle_x(self, left_eye: Tuple[int, int], right_eye: Tuple[int, int]) -> float:
 
         x = np.array(right_eye)
         y = np.array(left_eye)

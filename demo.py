@@ -9,8 +9,6 @@ from utils.landmark_detector import LandmarkDetector
 from utils import Mask
 
 
-
-
 @click.command()
 @click.option('--config_path', default='./config.yml', help='')
 def main(config_path):
@@ -50,8 +48,7 @@ def main(config_path):
                 forehead_position=landmarks['forehead'],
                 nose_position=landmarks['nose'],
                 center_position=landmarks['center'],
-                show_mask=config['show_mask']
-
+                show_mask=config['show_mask'],
             )
 
         end = time()

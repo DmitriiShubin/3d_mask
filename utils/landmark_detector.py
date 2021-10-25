@@ -1,13 +1,15 @@
 import cv2
 import mediapipe as mp
 
+import numpy as np
+
 
 class LandmarkDetector:
-    def __init__(self, config):
+    def __init__(self, config: dict):
 
         self.faceMesh = mp.solutions.face_mesh.FaceMesh(max_num_faces=config['num_faces'])
 
-    def run(self, frame):
+    def run(self, frame: np.array) -> dict:
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         predictions = self.faceMesh.process(frame)
@@ -35,9 +37,8 @@ class LandmarkDetector:
             )
 
             landmarks['center'] = (
-                                (landmarks['forehead'][0] + landmarks['nose'][0]) // 2,
-                                (landmarks['left_eye'][1] + landmarks['right_eye'][1]) // 2,
-
+                (landmarks['forehead'][0] + landmarks['nose'][0]) // 2,
+                (landmarks['left_eye'][1] + landmarks['right_eye'][1]) // 2,
             )
 
             return landmarks
