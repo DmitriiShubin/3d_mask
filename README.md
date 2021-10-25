@@ -42,13 +42,16 @@ In general, the alignment of the projection of the 3D object into a 2D image is 
 
 2. Depthmap estimation requires encoder-decoder NNs architectures, which creates additional computation issues for real-time processing.
 
+
+
 How can we avoid those issues?
  
 Let's summarise several assumptions that we know about the human face:
 
 1. In general, the face has a property of vertical symmetry. 
 2. The upper part of the face (eyes and forehead) is stationary, reflects the face's position, and is irrelevant to facial expressions. 
-3. SInce the user is always looking at the camera, the estimated degree angle is limited by -+ 30 degrees. 
+3. Face proportions varies a bit for different people, but in general, provide a certain degree of generalization.
+4. Since the user is always looking at the camera, the estimated degree angle is limited by -+ 30 degrees. 
 
 Sounds better, huh?
 
@@ -62,36 +65,57 @@ To do that, I created additional axillary points on the 3D model near eyes that 
 
 #### Head pose estimation using face keypoints
 
+##### Z rotation
+Let's start with the simples one. Since the model I used for eyes landmarks detection is invariant to head rotation, the Z-axis head rotation could be computes explicitly using Right triangle rule:
 
+![alt text](https://github.com/DmitriiShubin/3d_mask/blob/main/src/z_rotation.jpg)
+
+```
+def calculate_angle_x(self, left_eye: Tuple[int, int], right_eye: Tuple[int, int]) -> float:
+
+    x = np.array(right_eye)
+    y = np.array(left_eye)
+
+    proj = x[1] - y[1]
+
+    if proj > 0:
+        pos = True
+    elif proj < 0:
+        pos = False
+    else:
+        return 0
+
+    proj = np.abs(proj)
+
+    ct = 1 / np.tan(proj / (x[0] - y[0]))
+
+    if pos:
+        return 90 - np.degrees(np.arctan(ct))
+    else:
+        return np.degrees(np.arctan(ct)) - 90
+```
+
+##### Y rotation
+Calculation of Y is a bit more complex. The agle of Y-axis rotation is defined by the ratio of distances forehead-left_eye and forehead-right_eye. To estimate this relation, I trained a linear model on facial lendmarks extracted from [Biwi Kinect Head Pose Dataset](https://www.kaggle.com/kmader/biwi-kinect-head-pose-database).
+
+![alt text](https://github.com/DmitriiShubin/3d_mask/blob/main/src/y_rotation.jpg)
+
+```
+a = self._compute_distance_between_points(left_eye, forehead)
+b = self._compute_distance_between_points(right_eye, forehead)
+features['upper_sides_proportion'] = a / b
+```
+
+##### X rotation
+![alt text](https://github.com/DmitriiShubin/3d_mask/blob/main/src/x_rotation.jpg)
 
 ### Some intermediate results
 
-The general framework of alignment of the AR 3D mask implies the rendering problem when the arbitrary 3D object has to be rendered into the 2D image (projection).
 
-Ideally, it requires the following known parameters:
-1. relative position of the face with respect to the camera position
-2. estimation of the head pose with respect to the camera
-
-According to this, the pipeline should look like:
-1. Estimation of the depth (monocular, using one camera)
-2. Calclulating the normal vector for the face surface
-3. Estimatiopn of the pose using face normal
-4. Adjusting the camera parameters and rendering to the image.
-
-However, this approach has 
-
-How can we simplify it?
-
-There are several assumptions we can take:
-1. Our domain is closed to the human face, i.e. the 
-2. Symmetry
-3. Human faces are sharing the similarity
-3. angles 
-
-Ho
 
 
 ### What didn't work
+Trying to improve FPS, I tried to run a face detector prior to the landmark detecor. It
 1. detection of the face => adding keypoints 
 20-> 30 FPS
 probably could be beneficial when training and compression of the separate landmark detection model

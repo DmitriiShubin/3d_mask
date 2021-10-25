@@ -37,9 +37,9 @@ def main(config_path):
             if config['show_landmarks']:
                 frame = cv2.circle(frame, landmarks['right_eye'], radius=2, color=(0, 0, 255), thickness=2)
                 frame = cv2.circle(frame, landmarks['left_eye'], radius=2, color=(0, 0, 255), thickness=2)
-                frame = cv2.circle(frame, landmarks['nose'], radius=2, color=(0, 0, 255), thickness=2)
-                frame = cv2.circle(frame, landmarks['forehead'], radius=2, color=(0, 0, 255), thickness=2)
-                frame = cv2.circle(frame, landmarks['center'], radius=2, color=(0, 0, 255), thickness=2)
+                # frame = cv2.circle(frame, landmarks['nose'], radius=2, color=(0, 0, 255), thickness=2)
+                # frame = cv2.circle(frame, landmarks['forehead'], radius=2, color=(0, 0, 255), thickness=2)
+                # frame = cv2.circle(frame, landmarks['center'], radius=2, color=(0, 0, 255), thickness=2)
 
             frame = mask.run(
                 frame=frame,
