@@ -55,7 +55,7 @@ Sounds better, huh?
 Another critical assumption is that if we estimate the head pose (3 angles of rotation) correctly and adequately orient the 3D mask model, the only thing we need to do is to scale the mask to the size of the face and locate it on the face front.
 
 We can do it easily using eye landmarks:
-![alt text](https://github.com/DmitriiShubin/3d_mask/blob/main/src/landmaks.jpg)
+![alt text](https://github.com/DmitriiShubin/3d_mask/blob/main/src/landmarks.jpg)
 
 To do that, I created additional axillary points on the 3D model near eyes that will be rotated with the 3D model of the face mask. When the rotation is applied, projections of reference points will be obtained for the final fitting of the mask on the face.
 
