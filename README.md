@@ -10,6 +10,7 @@ The following repo describes the pepeline of real-time AR 3D facemask alignment 
 3. install python packages for your virtual environment:
 ```
 pip install -r requirements.txt
+jupyter nbextension enable --py --sys-prefix ipygany
 ```
 4. Run command from root:
 ```
