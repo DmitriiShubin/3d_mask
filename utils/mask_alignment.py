@@ -9,9 +9,9 @@ import pyvista as pv
 import vtk
 
 from .moving_average import MovingAverage
+from .renderer import Renderer
 
-
-class Mask:
+class MaskAlignment:
     def __init__(self, config: dict, frame_size: Tuple[int, int]):
 
         # load models for approximation of the head position
@@ -54,32 +54,10 @@ class Mask:
         self.img_width = frame_size[0]
         self.img_height = frame_size[1]
 
-        # Pick a background colour (default is light gray)
-        self.background_color = (1.0, 1.0, 1.0)  # while RGB
-
-        # setup the camera
-        self.camera = pv.Camera()
-        self.camera.position = [0, 0, 10]
-        near_range = 0.1
-        far_range = 10
-        self.camera.clipping_range = (near_range, far_range)
-        self.camera.view_angle = 16
-
-        # set up precomputed camera and projection matrixes
-        self.modelTransform = np.array(
-            [[1.0, 0.0, 0.0, -0.0], [0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 1.0, -10.0], [0.0, 0.0, 0.0, 1.0]],
-            dtype=np.float32,
+        self.renderer = Renderer(
+            img_width=self.img_width, img_height=self.img_height, background_color=(1,1,1)
         )
 
-        self.projTransform = np.array(
-            [
-                [5.3365273, 0.0, 0.0, 0.0],
-                [0.0, 7.11537, 0.0, 0.0],
-                [0.0, 0.0, -1.0, -0.2],
-                [0.0, 0.0, -1.0, 0.0],
-            ],
-            dtype=np.float32,
-        )
 
     def run(
         self,
@@ -100,19 +78,7 @@ class Mask:
             center=center_position,
         )
 
-        # create renderer
-        pl = pv.Plotter(off_screen=True)
-        pl.store_image = True
-        pl.window_size = self.img_width, self.img_height
-        pl.background_color = self.background_color
-        pl.camera = self.camera
-
-        # add object
-        pl.add_mesh(mesh_r, color=[0.2, 0.2, 0.2])
-
-        # render the image
-        pl.show()
-        image = pl.image.astype(np.float32)
+        image = self.renderer.render_mesh_to_image(mesh=mesh_r)
 
         # apply scaling
         image, render_reference_points = self._scale_mesh(
@@ -139,26 +105,7 @@ class Mask:
 
     ####### Utils #########
 
-    def _calculate_reference_point_projections(self, eye_points: pv.DataSet) -> List:
 
-        projections = []
-
-        points = np.array(eye_points.points)
-        for i in range(points.shape[0]):
-            point = points[i]
-            point = np.concatenate([point, np.ones(1)], axis=0)
-
-            projection = np.matmul(np.matmul(self.projTransform, self.modelTransform), point)
-            projection /= projection[-2]  # divide by Z
-            projection[1] /= -1  # Y is negative
-            projection[0] *= self.img_width // 2  # scale up
-            projection[1] *= self.img_height // 2  # scale up
-
-            projections.append(
-                (int(self.img_width // 2 + projection[0]), int(self.img_height // 2 + projection[1]))
-            )
-
-        return projections
 
     def _get_binary_mask(self, image: np.array) -> np.array:
         mask = np.zeros(image.shape)
@@ -173,19 +120,16 @@ class Mask:
         render_eye_points: pv.DataSet,
     ) -> [np.array, List]:
 
-        # start = time()
+
 
         frame_distance = self._compute_distance_between_points(x=left_eye, y=right_eye)
-        # print(time()-start)
-        # start = time()
-        render_reference_points = self._calculate_reference_point_projections(render_eye_points)
-        # print(time() - start)
-        # start = time()
+
+        render_reference_points = self.renderer.calculate_reference_point_projections(eye_points=render_eye_points)
+
         render_distance = self._compute_distance_between_points(
             x=render_reference_points[0], y=render_reference_points[1]
         )
-        # print(time() - start)
-        # print('#####################')
+
         scale_factor = frame_distance / render_distance
         scale_factor *= 1.4
 

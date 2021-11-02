@@ -4,7 +4,7 @@ import click
 import cv2
 import yaml
 
-from utils import Mask
+from utils import MaskAlignment
 from utils.landmark_detector import LandmarkDetector
 
 
@@ -21,7 +21,7 @@ def main(config_path):
     landmark_detector = LandmarkDetector(config=config)
 
     _, frame = cap.read()
-    mask = Mask(config=config['mesh_params'], frame_size=frame.shape[:2][::-1])
+    mask = MaskAlignment(config=config['mesh_params'], frame_size=frame.shape[:2][::-1])
 
     while True:
 

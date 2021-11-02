@@ -1,2 +1,2 @@
-from .mask import Mask
+from .mask_alignment import MaskAlignment
 from .moving_average import MovingAverage
