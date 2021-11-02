@@ -1,11 +1,12 @@
-import open3d as o3d
+import pyvista as pv
 import numpy as np
 import copy
 import cv2
 from typing import Tuple, List
 from .moving_average import MovingAverage
 import pickle
-
+import vtk
+from time import time
 
 class Mask:
     def __init__(self, config: dict, frame_size: Tuple[int, int]):
@@ -14,23 +15,26 @@ class Mask:
         self.theta_y_model = pickle.load(open('./data/face_pose_models/linear_model_theta_y.pkl', 'rb'))
         self.theta_x_model = pickle.load(open('./data/face_pose_models/linear_model_theta_x.pkl', 'rb'))
 
+        self.axes = pv.Axes(show_actor=True, actor_scale=2.0,
+                            line_width=5)  # center of coordinates, will need for rotation
+
         # load the mesh
-        self.mesh = o3d.io.read_triangle_mesh("./data/3d_models/Mask.fbx")
-        self.mesh.compute_vertex_normals()
+        self.mesh = pv.read("./data/3d_models/Mask.stl")
 
         # center and scale the mesh
-        self.mesh = self.mesh.translate(-1 * self.mesh.get_center())
-        self.mesh = self.mesh.scale(
-            1 / np.max(np.abs(np.asarray(self.mesh.vertices))), center=self.mesh.get_center()
-        )
-        # colorize
-        self.mesh.paint_uniform_color(config['mesh_color'])
+        points = self.mesh.extract_feature_edges()
+        points = points.points
+        self.mesh.translate(-1 * np.mean(points, axis=0))
+
+        points = self.mesh.extract_feature_edges()
+        points = points.points
+        self.mesh.scale(1 / np.max(np.abs(points)))
+
+        # rotate mesh to have a front look
+        self.mesh.rotate_y(90, point=self.axes.origin)
 
         # set up reference eye points
-        self.eye_points = o3d.geometry.PointCloud()
-        self.eye_points.points = o3d.utility.Vector3dVector(
-            np.array([[-0.01, 0.125, 0.5], [-0.01, 0.125, -0.5]])
-        )
+        self.eye_points = pv.PolyData(np.array([[-0.01, 0.125, 0.5], [-0.01, 0.125, -0.5]]))
 
         # define moving averages for various components
         self.moving_average_scale = MovingAverage(length=config['ma_scale_length'])
@@ -40,40 +44,43 @@ class Mask:
         self.moving_average_theta_y = MovingAverage(length=config['ma_rotation_length'])
         self.moving_average_theta_z = MovingAverage(length=config['ma_rotation_length'])
 
-        # rotate points to have a front loor
-        R = self.mesh.get_rotation_matrix_from_xyz((0, np.pi / 2, 0))
-        self.mesh.rotate(R, center=(0, 0, 0))
-        self.eye_points.rotate(R, center=(0, 0, 0))
+
 
         ############# parameters of scene for rendering #############
 
-        # Define the material
-        self.mtl = o3d.visualization.rendering.Material()
-        self.mtl.base_color = config['render_color']
-        self.mtl.shader = "defaultLit"
 
         self.img_width = frame_size[0]
         self.img_height = frame_size[1]
-        self.render = o3d.visualization.rendering.OffscreenRenderer(self.img_width, self.img_height)
+
 
         # Pick a background colour (default is light gray)
-        self.render.scene.set_background([255, 255, 255, 0.5])  # RGBA
+        self.background_color = (1.0,1.0,1.0) # while RGB
 
-        # Optionally set the camera field of view (to zoom in a bit)
-        vertical_field_of_view = 16.0  # between 5 and 90 degrees
-        aspect_ratio = self.img_width / self.img_height  # azimuth over elevation
-        near_plane = 0.1
-        far_plane = 10
-        fov_type = o3d.visualization.rendering.Camera.FovType.Vertical
-        self.render.scene.camera.set_projection(
-            vertical_field_of_view, aspect_ratio, near_plane, far_plane, fov_type
-        )
+        #setup the camera
+        self.camera = pv.Camera()
+        self.camera.position = [0, 0, 10]
+        near_range = 0.1
+        far_range = 10
+        self.camera.clipping_range = (near_range, far_range)
+        self.camera.view_angle = 16
 
-        # Look at the origin from the front (along the -Z direction, into the screen), with Y as Up.
-        center = [0, 0, 0]  # look_at target
-        eye = [0, 0, 10]  # camera position
-        up = [0, 1, 0]  # camera orientation
-        self.render.scene.camera.look_at(center, eye, up)
+
+
+        # set up precomputed camera and projection matrixes
+        self.modelTransform = np.array([
+            [1., 0., 0., -0.],
+            [0., 1., 0., -0.],
+            [0., 0., 1., -10.],
+            [0., 0., 0., 1.]
+        ], dtype=np.float32)
+
+        self.projTransform = np.array([
+            [5.3365273, 0., 0., 0.],
+            [0., 7.11537, 0., 0.],
+            [0., 0., -1., -0.2],
+            [0., 0., -1., 0.]]
+            , dtype=np.float32)
+
 
     def run(
         self,
@@ -86,6 +93,7 @@ class Mask:
         show_mask: bool,
     ) -> np.array:
 
+
         mesh_r, eye_points_r = self._rotate_mesh(
             left_eye=left_eye_position,
             right_eye=right_eye_position,
@@ -94,12 +102,23 @@ class Mask:
             center=center_position,
         )
 
+        #create renderer
+        pl = pv.Plotter(off_screen=True)
+        pl.store_image=True
+        pl.window_size = self.img_width, self.img_height
+        pl.background_color = self.background_color
+        pl.camera = self.camera
+
         # add object
-        self.render.scene.add_geometry("rotated_model", mesh_r, self.mtl)
+        pl.add_mesh(mesh_r, color=[0.2, 0.2, 0.2])
+
+
 
         # render the image
-        image = self.render.render_to_image()
-        image = cv2.cvtColor(np.array(image), cv2.COLOR_RGBA2RGB)
+        pl.show()
+        image = pl.image.astype(np.float32)
+
+        start = time()
 
         # apply scaling
         image, render_reference_points = self._scale_mesh(
@@ -108,15 +127,15 @@ class Mask:
             right_eye=right_eye_position,
             render_eye_points=eye_points_r,
         )
+        print(time()-start)
 
         # locate mesh
-        image = self._locate_mesh(
-            image=image,
-            frame_reference_points=(left_eye_position, right_eye_position),
-            render_reference_points=render_reference_points,
-        )
-        # remove all objects from render
-        self.render.scene.clear_geometry()
+        # image = self._locate_mesh(
+        #     image=image,
+        #     frame_reference_points=(left_eye_position, right_eye_position),
+        #     render_reference_points=render_reference_points,
+        # )
+
 
         # masking the rendered image
         mask = self._get_binary_mask(image=image)
@@ -128,9 +147,9 @@ class Mask:
 
     ####### Utils #########
 
-    def _calculate_reference_point_projections(self, eye_points: o3d.geometry.PointCloud) -> List:
-        P = self.render.scene.camera.get_projection_matrix()
-        V = self.render.scene.camera.get_view_matrix()
+    def _calculate_reference_point_projections(self, eye_points: pv.PolyData) -> List:
+
+
 
         projections = []
 
@@ -139,7 +158,7 @@ class Mask:
             point = points[i]
             point = np.concatenate([point, np.ones(1)], axis=0)
 
-            projection = np.matmul(np.matmul(P, V), point)
+            projection = np.matmul(np.matmul(self.projTransform, self.modelTransform), point)
             projection /= projection[-2]  # divide by Z
             projection[1] /= -1  # Y is negative
             projection[0] *= self.img_width // 2  # scale up
@@ -161,15 +180,22 @@ class Mask:
         image: np.array,
         left_eye: Tuple[int, int],
         right_eye: Tuple[int, int],
-        render_eye_points: o3d.geometry.PointCloud,
+        render_eye_points: pv.PolyData,
     ) -> [np.array, List]:
 
+        #start = time()
+
         frame_distance = self._compute_distance_between_points(x=left_eye, y=right_eye)
+        # print(time()-start)
+        # start = time()
         render_reference_points = self._calculate_reference_point_projections(render_eye_points)
+        # print(time() - start)
+        # start = time()
         render_distance = self._compute_distance_between_points(
             x=render_reference_points[0], y=render_reference_points[1]
         )
-
+        # print(time() - start)
+        # print('#####################')
         scale_factor = frame_distance / render_distance
         scale_factor *= 1.4
 
@@ -244,35 +270,39 @@ class Mask:
         forehead: Tuple[int, int],
         nose: Tuple[int, int],
         center: Tuple[int, int],
-    ) -> [o3d.geometry.TriangleMesh, o3d.geometry.PointCloud]:
+    ) -> [pv.DataSet, pv.PolyData]:
 
         face_features = self.exract_face_features(
             left_eye=left_eye, right_eye=right_eye, forehead=forehead, nose=nose, center=center
         )
 
-        theta_y = self.theta_y_model.predict(
+        theta_y = -self.theta_y_model.predict(
             np.array([face_features['upper_sides_proportion']]).reshape(-1, 1)
         )[0]
         theta_y = np.clip(theta_y, a_min=-30, a_max=30)
+
         features_x = np.array([face_features['vertical_sides_proportion']])
         theta_x = self.theta_x_model.predict(features_x.reshape(-1, features_x.shape[0]))[0]
-
         theta_x = np.clip(theta_x, a_min=-15, a_max=15)
 
-        theta_z = (-self.calculate_angle_x(left_eye=left_eye, right_eye=right_eye) / 180) * np.pi
-        theta_y = (-theta_y / 180) * np.pi
-        theta_x = (theta_x / 180) * np.pi
+        theta_z = -self.calculate_angle_x(left_eye=left_eye, right_eye=right_eye)
+
 
         theta_x = self.moving_average_theta_x.run(value=theta_x)
         theta_y = self.moving_average_theta_y.run(value=theta_y)
         theta_z = self.moving_average_theta_z.run(value=theta_z)
 
-        R = self.mesh.get_rotation_matrix_from_xyz((theta_x, theta_y, theta_z))
-        mesh_r = copy.deepcopy(self.mesh)
-        mesh_r.rotate(R, center=(0, 0, 0))
+        mesh_r = self.mesh.copy()
 
-        eye_points_r = copy.deepcopy(self.eye_points)
-        eye_points_r.rotate(R, center=(0, 0, 0))
+        mesh_r.rotate_x(theta_x, point=self.axes.origin)
+        mesh_r.rotate_y(theta_y, point=self.axes.origin)
+        mesh_r.rotate_z(theta_z, point=self.axes.origin)
+
+        eye_points_r = self.eye_points.copy()
+
+        eye_points_r.rotate_x(theta_x, point=self.axes.origin)
+        eye_points_r.rotate_y(theta_y, point=self.axes.origin)
+        eye_points_r.rotate_z(theta_z, point=self.axes.origin)
 
         return mesh_r, eye_points_r
 
@@ -333,3 +363,11 @@ class Mask:
             return 90 - np.degrees(np.arctan(ct))
         else:
             return np.degrees(np.arctan(ct)) - 90
+
+    def _trans_to_matrix(self,trans):
+        """Convert a numpy.ndarray to a vtk.vtkMatrix4x4 """
+        matrix = vtk.vtkMatrix4x4()
+        for i in range(trans.shape[0]):
+            for j in range(trans.shape[1]):
+                matrix.SetElement(i, j, trans[i, j])
+        return matrix
