@@ -69,7 +69,7 @@ class MaskAlignment:
             render_eye_points=eye_points_r,
         )
 
-        # locate mesh
+        # # locate mesh
         image = self._locate_mesh(
             image=image,
             frame_reference_points=(left_eye_position, right_eye_position),
@@ -110,7 +110,7 @@ class MaskAlignment:
         )
 
         scale_factor = frame_distance / render_distance
-        scale_factor *= 1.4
+        scale_factor *= self.mask.get_scaling_coeficient()
 
         # apply moving average
         scale_factor = self.moving_average_scale.run(value=scale_factor)

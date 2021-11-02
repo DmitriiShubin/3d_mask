@@ -1,5 +1,7 @@
+import gc
 from typing import List, Optional, Tuple
 
+import cv2
 import numpy as np
 import pyvista as pv
 
@@ -64,6 +66,7 @@ class Renderer:
 
         # create renderer
         pl = pv.Plotter(off_screen=True)
+
         pl.store_image = True
         pl.window_size = self.img_width, self.img_height
         pl.background_color = self.background_color
@@ -71,11 +74,22 @@ class Renderer:
 
         # add object
         if texture is not None:
-            pl.add_mesh(mesh, color=[0.2, 0.2, 0.2])
+            pl.add_mesh(mesh, texture=texture)
         else:
             pl.add_mesh(mesh, color=mesh_color)
 
         # render the image
         pl.show()
 
-        return pl.image.astype(np.float32)
+        image = pl.image.astype(np.float32)
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+        pl.clear()
+        # we need to remove each actor...
+        for ren in pl.renderers:
+            for actor in list(ren._actors):
+                ren.remove_actor(actor)
+        pl.deep_clean()
+        pl.close()
+
+        return image

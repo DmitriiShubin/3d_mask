@@ -1,12 +1,12 @@
 num_faces: 1
 show_landmarks: False
 show_mask: True
-mask_type: "frontman"
+mask_type: "half_ram"
 
 alignment_params:
   ma_scale_length: 10
   ma_position_length: 3
-  ma_rotation_length: 5
+  ma_rotation_length: 3
 
 
 #parameters for different types of masks
@@ -15,11 +15,70 @@ frontman:
   model_path: "./data/3d_models/frontman/Mask.stl"
   texture_path: None
   mesh_color: (0.2, 0.2, 0.2)
-  eye_coordinates: [[-0.01, 0.125, 0.5], [-0.01, 0.125, -0.5]]
+  rotation_center: [-0.75,0,0]
+  eye_coordinates: [[0, 0.125, 0.5], [0, 0.125, -0.5]]#[[-0.01, 0.125, 0.5], [-0.01, 0.125, -0.5]]
   initial_rotation:
     x: 0
     y: 90
     z: 0
   background_color: (1, 1, 1)
   color_threshold: 150 #color threshold for separation of the mask from backgroud
-half_ram: 1
+  scaling_coefficient: 1.3
+
+half_ram:
+  model_path: "./data/3d_models/half_ram/mask.obj"
+  texture_path: "./data/3d_models/half_ram/mask_texture.png"
+  mesh_color: None
+  rotation_center: [0,0,0]
+  eye_coordinates: [[-0.35,-0.35,0],[ 0.27,-0.35,0]]
+  initial_rotation:
+    x: 0
+    y: 0
+    z: 0
+  background_color: (1, 1, 1)
+  color_threshold: 220 #color threshold for separation of the mask from backgroud
+  scaling_coefficient: 1.2
+
+joker:
+  model_path: "./data/3d_models/joker-mask/mask.obj"
+  texture_path: "./data/3d_models/joker-mask/mask_texture.jpeg"
+  mesh_color: None
+  rotation_center: [0,-0.75,0]
+  eye_coordinates: [[-0.4,0,0.175],[0.4,0,0.175]]
+  initial_rotation:
+    x: -90
+    y: 0
+    z: 0
+  background_color: (1, 1, 1)
+  color_threshold: 220 #color threshold for separation of the mask from backgroud
+  scaling_coefficient: 1.1
+
+
+mustache:
+  model_path: "./data/3d_models/mustache/Bigote.obj"
+  texture_path: None
+  mesh_color: (0.2, 0.2, 0.2)
+  rotation_center: [0,0,1]
+  eye_coordinates: [[0.5,0.8,0],[-0.5,0.8,0]] #[[0.5,0.8,0],[-0.5,0.8,0]]
+  initial_rotation:
+    x: 0
+    y: 0
+    z: 0
+  background_color: (1, 1, 1)
+  color_threshold: 220 #color threshold for separation of the mask from backgroud
+  scaling_coefficient: 1
+
+
+putin:
+  model_path: "./data/3d_models/putin/putin.OBJ"
+  texture_path: "./data/3d_models/putin/color.png"
+  mesh_color: None
+  rotation_center: [0,0,0]
+  eye_coordinates: [[-0.3,0,0.615],[0.3,0,0.615]]
+  initial_rotation:
+    x: 0
+    y: 0
+    z: 0
+  background_color: (1, 1, 1)
+  color_threshold: 220 #color threshold for separation of the mask from backgroud
+  scaling_coefficient: 1.1

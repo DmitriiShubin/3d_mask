@@ -8,7 +8,8 @@ class MaskFactory:
     def __init__(self, config: Dict):
 
         # eval several components of dict
-        config['texture_path'] = eval(config['texture_path'])
+        if config['texture_path'] == 'None':
+            config['texture_path'] = eval(config['texture_path'])
         config['mesh_color'] = eval(config['mesh_color'])
         config['background_color'] = eval(config['background_color'])
 
@@ -53,6 +54,14 @@ class MaskFactory:
         # define threshold
         self.threshold = config['color_threshold']
 
+        # scaling_coefficient for definition of the size of the mask
+        self.scaling_coefficient = config['scaling_coefficient']
+
+        self.rotation_center = config['rotation_center']
+
+    def get_scaling_coeficient(self):
+        return self.scaling_coefficient
+
     def get_mesh_texture(self):
         return self.texture
 
@@ -71,14 +80,14 @@ class MaskFactory:
 
         mesh_r = self.mesh.copy()
 
-        mesh_r.rotate_x(theta_x, point=self.axes.origin)
-        mesh_r.rotate_y(theta_y, point=self.axes.origin)
-        mesh_r.rotate_z(theta_z, point=self.axes.origin)
+        mesh_r.rotate_x(theta_x, point=self.rotation_center)
+        mesh_r.rotate_y(theta_y, point=self.rotation_center)
+        mesh_r.rotate_z(theta_z, point=self.rotation_center)
 
         eye_points_r = self.eye_points.copy()
 
-        eye_points_r.rotate_x(theta_x, point=self.axes.origin)
-        eye_points_r.rotate_y(theta_y, point=self.axes.origin)
-        eye_points_r.rotate_z(theta_z, point=self.axes.origin)
+        eye_points_r.rotate_x(theta_x, point=self.rotation_center)
+        eye_points_r.rotate_y(theta_y, point=self.rotation_center)
+        eye_points_r.rotate_z(theta_z, point=self.rotation_center)
 
         return mesh_r, eye_points_r
