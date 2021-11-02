@@ -1,15 +1,15 @@
-import copy
+
 import pickle
-from time import time
 from typing import List, Tuple
 
 import cv2
 import numpy as np
 import pyvista as pv
-import vtk
 
+from .mask_factory import MaskFactory
 from .moving_average import MovingAverage
 from .renderer import Renderer
+
 
 class MaskAlignment:
     def __init__(self, config: dict, frame_size: Tuple[int, int]):
@@ -18,28 +18,7 @@ class MaskAlignment:
         self.theta_y_model = pickle.load(open('./data/face_pose_models/linear_model_theta_y.pkl', 'rb'))
         self.theta_x_model = pickle.load(open('./data/face_pose_models/linear_model_theta_x.pkl', 'rb'))
 
-        self.axes = pv.Axes(
-            show_actor=True, actor_scale=2.0, line_width=5
-        )  # center of coordinates, will need for rotation
-
-        # load the mesh
-        self.mesh = pv.read("./data/3d_models/Mask.stl")
-
-        # center and scale the mesh
-        points = self.mesh.extract_feature_edges()
-        points = points.points
-        self.mesh.translate(-1 * np.mean(points, axis=0))
-
-        points = self.mesh.extract_feature_edges()
-        points = points.points
-        self.mesh.scale(1 / np.max(np.abs(points)))
-
-        # set up reference eye points
-        self.eye_points = pv.PolyData(np.array([[-0.01, 0.125, 0.5], [-0.01, 0.125, -0.5]]))
-
-        # rotate mesh to have a front look
-        self.mesh.rotate_y(90, point=self.axes.origin)
-        self.eye_points.rotate_y(90, point=self.axes.origin)
+        self.mask = MaskFactory()
 
         # define moving averages for various components
         self.moving_average_scale = MovingAverage(length=config['ma_scale_length'])
@@ -49,15 +28,12 @@ class MaskAlignment:
         self.moving_average_theta_y = MovingAverage(length=config['ma_rotation_length'])
         self.moving_average_theta_z = MovingAverage(length=config['ma_rotation_length'])
 
-        ############# parameters of scene for rendering #############
-
         self.img_width = frame_size[0]
         self.img_height = frame_size[1]
 
         self.renderer = Renderer(
-            img_width=self.img_width, img_height=self.img_height, background_color=(1,1,1)
+            img_width=self.img_width, img_height=self.img_height, background_color=(1, 1, 1)
         )
-
 
     def run(
         self,
@@ -105,8 +81,6 @@ class MaskAlignment:
 
     ####### Utils #########
 
-
-
     def _get_binary_mask(self, image: np.array) -> np.array:
         mask = np.zeros(image.shape)
         mask[image[:, :, 0] < 150] = 1  # thresholding
@@ -120,11 +94,11 @@ class MaskAlignment:
         render_eye_points: pv.DataSet,
     ) -> [np.array, List]:
 
-
-
         frame_distance = self._compute_distance_between_points(x=left_eye, y=right_eye)
 
-        render_reference_points = self.renderer.calculate_reference_point_projections(eye_points=render_eye_points)
+        render_reference_points = self.renderer.calculate_reference_point_projections(
+            eye_points=render_eye_points
+        )
 
         render_distance = self._compute_distance_between_points(
             x=render_reference_points[0], y=render_reference_points[1]
@@ -225,19 +199,7 @@ class MaskAlignment:
         theta_y = self.moving_average_theta_y.run(value=theta_y)
         theta_z = self.moving_average_theta_z.run(value=theta_z)
 
-        mesh_r = self.mesh.copy()
-
-        mesh_r.rotate_x(theta_x, point=self.axes.origin)
-        mesh_r.rotate_y(theta_y, point=self.axes.origin)
-        mesh_r.rotate_z(theta_z, point=self.axes.origin)
-
-        eye_points_r = self.eye_points.copy()
-
-        eye_points_r.rotate_x(theta_x, point=self.axes.origin)
-        eye_points_r.rotate_y(theta_y, point=self.axes.origin)
-        eye_points_r.rotate_z(theta_z, point=self.axes.origin)
-
-        return mesh_r, eye_points_r
+        return self.mask.get_rotated_mesh_and_points(theta_x=theta_x, theta_y=theta_y, theta_z=theta_z)
 
     def exract_face_features(
         self,
@@ -296,11 +258,3 @@ class MaskAlignment:
             return 90 - np.degrees(np.arctan(ct))
         else:
             return np.degrees(np.arctan(ct)) - 90
-
-    def _trans_to_matrix(self, trans):
-        """Convert a numpy.ndarray to a vtk.vtkMatrix4x4"""
-        matrix = vtk.vtkMatrix4x4()
-        for i in range(trans.shape[0]):
-            for j in range(trans.shape[1]):
-                matrix.SetElement(i, j, trans[i, j])
-        return matrix

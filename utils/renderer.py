@@ -1,10 +1,11 @@
-from typing import Tuple,List
-import pyvista as pv
+from typing import List, Tuple
+
 import numpy as np
+import pyvista as pv
+
 
 class Renderer:
-
-    def __init__(self,img_width:int,img_height: int, background_color: Tuple[float,float,float]):
+    def __init__(self, img_width: int, img_height: int, background_color: Tuple[float, float, float]):
 
         self.img_width = img_width
         self.img_height = img_height
@@ -36,7 +37,6 @@ class Renderer:
             dtype=np.float32,
         )
 
-
     def calculate_reference_point_projections(self, eye_points: pv.DataSet) -> List:
 
         projections = []
@@ -58,7 +58,7 @@ class Renderer:
 
         return projections
 
-    def render_mesh_to_image(self,mesh: pv.DataSet):
+    def render_mesh_to_image(self, mesh: pv.DataSet):
 
         # create renderer
         pl = pv.Plotter(off_screen=True)
