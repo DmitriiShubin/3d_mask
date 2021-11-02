@@ -1,18 +1,18 @@
-from typing import Tuple
+from typing import Dict
 
 import numpy as np
 import pyvista as pv
 
 
 class MaskFactory:
-    def __init__(self):
+    def __init__(self, config: Dict, mask_type: str):
 
         self.axes = pv.Axes(
             show_actor=True, actor_scale=2.0, line_width=5
         )  # center of coordinates, will need for rotation
 
         # load the mesh
-        self.mesh = pv.read("./data/3d_models/Mask.stl")
+        self.mesh = pv.read("./data/3d_models/frontman/Mask.stl")
 
         # center and scale the mesh
         points = self.mesh.extract_feature_edges()
@@ -29,6 +29,28 @@ class MaskFactory:
         # rotate mesh to have a front look
         self.mesh.rotate_y(90, point=self.axes.origin)
         self.eye_points.rotate_y(90, point=self.axes.origin)
+
+        # define baclground color
+        self.background_color = (1, 1, 1)
+
+        # define threshold
+        self.threshold = 150
+
+        self.texture = None
+
+        self.mesh_color = (0.2, 0.2, 0.2)  # RGB
+
+    def get_mesh_texture(self):
+        return self.texture
+
+    def get_mesh_color(self):
+        return self.mesh_color
+
+    def get_threshold(self):
+        return self.threshold
+
+    def get_background_color(self):
+        return self.background_color
 
     def get_rotated_mesh_and_points(
         self, theta_x: float, theta_y: float, theta_z: float

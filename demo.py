@@ -21,7 +21,7 @@ def main(config_path):
     landmark_detector = LandmarkDetector(config=config)
 
     _, frame = cap.read()
-    mask = MaskAlignment(config=config['mesh_params'], frame_size=frame.shape[:2][::-1])
+    mask = MaskAlignment(config=config, frame_size=frame.shape[:2][::-1])
 
     while True:
 

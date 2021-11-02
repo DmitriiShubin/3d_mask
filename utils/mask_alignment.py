@@ -1,4 +1,3 @@
-
 import pickle
 from typing import List, Tuple
 
@@ -18,7 +17,9 @@ class MaskAlignment:
         self.theta_y_model = pickle.load(open('./data/face_pose_models/linear_model_theta_y.pkl', 'rb'))
         self.theta_x_model = pickle.load(open('./data/face_pose_models/linear_model_theta_x.pkl', 'rb'))
 
-        self.mask = MaskFactory()
+        self.mask = MaskFactory(config=config[config['mask_type']], mask_type=config['mask_type'])
+
+        config = config['alignment_params']
 
         # define moving averages for various components
         self.moving_average_scale = MovingAverage(length=config['ma_scale_length'])
@@ -32,7 +33,9 @@ class MaskAlignment:
         self.img_height = frame_size[1]
 
         self.renderer = Renderer(
-            img_width=self.img_width, img_height=self.img_height, background_color=(1, 1, 1)
+            img_width=self.img_width,
+            img_height=self.img_height,
+            background_color=self.mask.get_background_color(),
         )
 
     def run(
@@ -54,7 +57,9 @@ class MaskAlignment:
             center=center_position,
         )
 
-        image = self.renderer.render_mesh_to_image(mesh=mesh_r)
+        image = self.renderer.render_mesh_to_image(
+            mesh=mesh_r, mesh_color=self.mask.get_mesh_color(), texture=self.mask.get_mesh_texture()
+        )
 
         # apply scaling
         image, render_reference_points = self._scale_mesh(
@@ -83,7 +88,7 @@ class MaskAlignment:
 
     def _get_binary_mask(self, image: np.array) -> np.array:
         mask = np.zeros(image.shape)
-        mask[image[:, :, 0] < 150] = 1  # thresholding
+        mask[image[:, :, 0] < self.mask.get_threshold()] = 1  # thresholding
         return mask
 
     def _scale_mesh(

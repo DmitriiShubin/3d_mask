@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import pyvista as pv
@@ -58,7 +58,9 @@ class Renderer:
 
         return projections
 
-    def render_mesh_to_image(self, mesh: pv.DataSet):
+    def render_mesh_to_image(
+        self, mesh: pv.DataSet, texture: Optional[pv.DataSet] = None, mesh_color: Optional[Tuple] = None
+    ):
 
         # create renderer
         pl = pv.Plotter(off_screen=True)
@@ -68,7 +70,10 @@ class Renderer:
         pl.camera = self.camera
 
         # add object
-        pl.add_mesh(mesh, color=[0.2, 0.2, 0.2])
+        if texture is not None:
+            pl.add_mesh(mesh, color=[0.2, 0.2, 0.2])
+        else:
+            pl.add_mesh(mesh, color=mesh_color)
 
         # render the image
         pl.show()
