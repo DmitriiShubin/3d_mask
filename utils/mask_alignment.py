@@ -17,7 +17,7 @@ class MaskAlignment:
         self.theta_y_model = pickle.load(open('./data/face_pose_models/linear_model_theta_y.pkl', 'rb'))
         self.theta_x_model = pickle.load(open('./data/face_pose_models/linear_model_theta_x.pkl', 'rb'))
 
-        self.mask = MaskFactory(config=config[config['mask_type']], mask_type=config['mask_type'])
+        self.mask = MaskFactory(config=config[config['mask_type']])
 
         config = config['alignment_params']
 
