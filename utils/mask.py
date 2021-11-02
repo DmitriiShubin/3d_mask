@@ -1,12 +1,15 @@
-import pyvista as pv
-import numpy as np
 import copy
-import cv2
-from typing import Tuple, List
-from .moving_average import MovingAverage
 import pickle
-import vtk
 from time import time
+from typing import List, Tuple
+
+import cv2
+import numpy as np
+import pyvista as pv
+import vtk
+
+from .moving_average import MovingAverage
+
 
 class Mask:
     def __init__(self, config: dict, frame_size: Tuple[int, int]):
@@ -15,8 +18,9 @@ class Mask:
         self.theta_y_model = pickle.load(open('./data/face_pose_models/linear_model_theta_y.pkl', 'rb'))
         self.theta_x_model = pickle.load(open('./data/face_pose_models/linear_model_theta_x.pkl', 'rb'))
 
-        self.axes = pv.Axes(show_actor=True, actor_scale=2.0,
-                            line_width=5)  # center of coordinates, will need for rotation
+        self.axes = pv.Axes(
+            show_actor=True, actor_scale=2.0, line_width=5
+        )  # center of coordinates, will need for rotation
 
         # load the mesh
         self.mesh = pv.read("./data/3d_models/Mask.stl")
@@ -30,11 +34,12 @@ class Mask:
         points = points.points
         self.mesh.scale(1 / np.max(np.abs(points)))
 
-        # rotate mesh to have a front look
-        self.mesh.rotate_y(90, point=self.axes.origin)
-
         # set up reference eye points
         self.eye_points = pv.PolyData(np.array([[-0.01, 0.125, 0.5], [-0.01, 0.125, -0.5]]))
+
+        # rotate mesh to have a front look
+        self.mesh.rotate_y(90, point=self.axes.origin)
+        self.eye_points.rotate_y(90, point=self.axes.origin)
 
         # define moving averages for various components
         self.moving_average_scale = MovingAverage(length=config['ma_scale_length'])
@@ -44,19 +49,15 @@ class Mask:
         self.moving_average_theta_y = MovingAverage(length=config['ma_rotation_length'])
         self.moving_average_theta_z = MovingAverage(length=config['ma_rotation_length'])
 
-
-
         ############# parameters of scene for rendering #############
-
 
         self.img_width = frame_size[0]
         self.img_height = frame_size[1]
 
-
         # Pick a background colour (default is light gray)
-        self.background_color = (1.0,1.0,1.0) # while RGB
+        self.background_color = (1.0, 1.0, 1.0)  # while RGB
 
-        #setup the camera
+        # setup the camera
         self.camera = pv.Camera()
         self.camera.position = [0, 0, 10]
         near_range = 0.1
@@ -64,23 +65,21 @@ class Mask:
         self.camera.clipping_range = (near_range, far_range)
         self.camera.view_angle = 16
 
-
-
         # set up precomputed camera and projection matrixes
-        self.modelTransform = np.array([
-            [1., 0., 0., -0.],
-            [0., 1., 0., -0.],
-            [0., 0., 1., -10.],
-            [0., 0., 0., 1.]
-        ], dtype=np.float32)
+        self.modelTransform = np.array(
+            [[1.0, 0.0, 0.0, -0.0], [0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 1.0, -10.0], [0.0, 0.0, 0.0, 1.0]],
+            dtype=np.float32,
+        )
 
-        self.projTransform = np.array([
-            [5.3365273, 0., 0., 0.],
-            [0., 7.11537, 0., 0.],
-            [0., 0., -1., -0.2],
-            [0., 0., -1., 0.]]
-            , dtype=np.float32)
-
+        self.projTransform = np.array(
+            [
+                [5.3365273, 0.0, 0.0, 0.0],
+                [0.0, 7.11537, 0.0, 0.0],
+                [0.0, 0.0, -1.0, -0.2],
+                [0.0, 0.0, -1.0, 0.0],
+            ],
+            dtype=np.float32,
+        )
 
     def run(
         self,
@@ -93,7 +92,6 @@ class Mask:
         show_mask: bool,
     ) -> np.array:
 
-
         mesh_r, eye_points_r = self._rotate_mesh(
             left_eye=left_eye_position,
             right_eye=right_eye_position,
@@ -102,9 +100,9 @@ class Mask:
             center=center_position,
         )
 
-        #create renderer
+        # create renderer
         pl = pv.Plotter(off_screen=True)
-        pl.store_image=True
+        pl.store_image = True
         pl.window_size = self.img_width, self.img_height
         pl.background_color = self.background_color
         pl.camera = self.camera
@@ -112,13 +110,9 @@ class Mask:
         # add object
         pl.add_mesh(mesh_r, color=[0.2, 0.2, 0.2])
 
-
-
         # render the image
         pl.show()
         image = pl.image.astype(np.float32)
-
-        start = time()
 
         # apply scaling
         image, render_reference_points = self._scale_mesh(
@@ -127,15 +121,13 @@ class Mask:
             right_eye=right_eye_position,
             render_eye_points=eye_points_r,
         )
-        print(time()-start)
 
         # locate mesh
-        # image = self._locate_mesh(
-        #     image=image,
-        #     frame_reference_points=(left_eye_position, right_eye_position),
-        #     render_reference_points=render_reference_points,
-        # )
-
+        image = self._locate_mesh(
+            image=image,
+            frame_reference_points=(left_eye_position, right_eye_position),
+            render_reference_points=render_reference_points,
+        )
 
         # masking the rendered image
         mask = self._get_binary_mask(image=image)
@@ -147,9 +139,7 @@ class Mask:
 
     ####### Utils #########
 
-    def _calculate_reference_point_projections(self, eye_points: pv.PolyData) -> List:
-
-
+    def _calculate_reference_point_projections(self, eye_points: pv.DataSet) -> List:
 
         projections = []
 
@@ -180,10 +170,10 @@ class Mask:
         image: np.array,
         left_eye: Tuple[int, int],
         right_eye: Tuple[int, int],
-        render_eye_points: pv.PolyData,
+        render_eye_points: pv.DataSet,
     ) -> [np.array, List]:
 
-        #start = time()
+        # start = time()
 
         frame_distance = self._compute_distance_between_points(x=left_eye, y=right_eye)
         # print(time()-start)
@@ -287,7 +277,6 @@ class Mask:
 
         theta_z = -self.calculate_angle_x(left_eye=left_eye, right_eye=right_eye)
 
-
         theta_x = self.moving_average_theta_x.run(value=theta_x)
         theta_y = self.moving_average_theta_y.run(value=theta_y)
         theta_z = self.moving_average_theta_z.run(value=theta_z)
@@ -364,8 +353,8 @@ class Mask:
         else:
             return np.degrees(np.arctan(ct)) - 90
 
-    def _trans_to_matrix(self,trans):
-        """Convert a numpy.ndarray to a vtk.vtkMatrix4x4 """
+    def _trans_to_matrix(self, trans):
+        """Convert a numpy.ndarray to a vtk.vtkMatrix4x4"""
         matrix = vtk.vtkMatrix4x4()
         for i in range(trans.shape[0]):
             for j in range(trans.shape[1]):

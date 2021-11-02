@@ -4,6 +4,6 @@ show_mask: True
 mesh_params:
   mesh_color: [0.2, 0.2, 0.2]
   render_color: [0.2, 0.2, 0.2, 1] #RGBA
-  ma_scale_length: 5
-  ma_position_length: 2
-  ma_rotation_length: 3
+  ma_scale_length: 10
+  ma_position_length: 3
+  ma_rotation_length: 5
