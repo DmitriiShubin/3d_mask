@@ -23,6 +23,8 @@ def main(config_path):
     _, frame = cap.read()
     mask = MaskAlignment(config=config, frame_size=frame.shape[:2][::-1])
 
+
+
     while True:
 
         start = time()
@@ -54,6 +56,9 @@ def main(config_path):
 
         cv2.putText(
             frame, f'FPS:{int(1/(end-start))}', (20, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2
+        )
+        cv2.putText(
+            frame, f"Mask: {config['mask_type']}", (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2
         )
         cv2.imshow('Camera', frame)
 
