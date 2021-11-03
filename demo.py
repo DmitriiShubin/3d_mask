@@ -6,7 +6,7 @@ import yaml
 
 from utils import MaskAlignment
 from utils.landmark_detector import LandmarkDetector
-
+import numpy as np
 
 @click.command()
 @click.option('--config_path', default='./config.yml', help='')
@@ -31,6 +31,14 @@ def main(config_path):
 
         # get frame from video
         ret, frame = cap.read()
+
+        #resize to 480x640
+        if not np.isclose((frame.shape[0]/frame.shape[1]),0.75,atol=0.01):
+            frame = frame[:,:int(frame.shape[1]*0.75),:]
+
+        frame = cv2.resize(frame,(640,480))
+
+
 
         # get face landmarks
         landmarks = landmark_detector.run(frame=frame)
