@@ -1,7 +1,17 @@
 ## Real-time 3D AR face mask alignment using facial landmarks
-The following repo describes the pepeline of real-time AR 3D facemask alignment (mask of Frontman from Squid Games TV series)
+The following repo describes the pipeline of real-time AR 3D face mask alignment 
+
+Availiable facemasks:
+1. FrontMan, Squid Games TV series (https://youtu.be/azCmCA4WhrI)
+2. **Vladimir Putin** (My favorite) (https://youtu.be/mltJyCFM2Xc)
+3. Ram (https://youtu.be/mltJyCFM2Xc) (https://youtu.be/G33-h3I2sY8)
+4. Mastache (Probably, the least interesting)
+5. Joker (https://youtu.be/MmZk9iWFJcU)
+
+**The Open3D rendering engine was replaced with Pyvista because it allows using of textures. However, Pyvista has internal memory leak since 2019. Therefore, the app runs only ~ 1 minute on my 16Gb RAM laptop before crushing.**
+
 ### Demo
-[![IMAGE ALT TEXT HERE](https://github.com/DmitriiShubin/3d_mask/blob/main/src/preview.png)](https://youtu.be/Fda6uE5K8r0)
+[![IMAGE ALT TEXT HERE](https://github.com/DmitriiShubin/3d_mask/blob/main/src/preview.jpg)](https://youtu.be/mltJyCFM2Xc)
 
 ### How launch
 
@@ -16,6 +26,8 @@ jupyter nbextension enable --py --sys-prefix ipygany
 ```
 python demo.py
 ```
+
+You can also select alailiable masks at "./config.yaml"
 
 ### Pipeline
 ![alt text](https://github.com/DmitriiShubin/3d_mask/blob/main/src/pipeline.jpg)
