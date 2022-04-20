@@ -10,7 +10,7 @@ Availiable facemasks:
 **The Open3D rendering engine was replaced with Pyvista because it allows using of textures. However, Pyvista has internal memory leak since 2019. Therefore, the app runs only ~ 1 minute on my 16Gb RAM laptop before crushing.**
 
 ### Demo
-[![IMAGE ALT TEXT HERE](https://github.com/DmitriiShubin/3d_mask/blob/main/src/preview.jpg)](https://youtu.be/azCmCA4WhrI)
+[![IMAGE ALT TEXT HERE](https://github.com/DmitriiShubin/3d_mask/blob/main/src/preview_1.png)](https://youtu.be/azCmCA4WhrI)
 
 ### How launch
 
